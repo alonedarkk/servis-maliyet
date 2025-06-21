@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2025 Servis Maliyet Hesaplayıcı</title>
+  <style>
+    :root {
+      --primary: #3B82F6;
+      --profit: #10B981;
+      --danger: #EF4444;
+    }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #F9FAFB;
+      color: #1F2937;
+      line-height: 1.5;
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: var(--primary);
+    }
+    .input-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      color: #4B5563;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #F9FAFB;
+    }
+    button {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      margin-top: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: #2563EB;
+    }
+    #result {
+      margin-top: 1.5rem;
+      display: none;
+    }
+    .cost-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px dashed #E5E7EB;
+    }
+    .cost-row.total {
+      font-weight: 700;
+      color: var(--primary);
+      border-top: 2px solid #E5E7EB;
+      margin-top: 8px;
+      padding-top: 12px;
+    }
+    .cost-row.profit {
+      color: var(--profit);
+      font-weight: 600;
+    }
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin: 16px 0 8px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: #EFF6FF;
+      color: var(--primary);
+    }
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+      margin-right: 10px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: var(--primary);
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🚛 2025 Servis Maliyet + Kâr Hesaplayıcı</h1>
+    
+    <div class="input-group">
+      <label>Araç Tipi</label>
+      <select id="vehicleType" onchange="updateVehicleDetails()">
+        <option value="8.2|3.5">Fiat Doblo (8.2L/100km - 3.5₺/km)</option>
+        <option value="5.1|4.0">Ford Courier (5.1L/100km - 4.0₺/km)</option>
+        <option value="12.5|5.5">Renault Master (12.5L/100km - 5.5₺/km)</option>
+        <option value="custom">Özel Araç</option>
+      </select>
+    </div>
+    
+    <div id="customConsumptionGroup" style="display:none;">
+      <div class="input-group">
+        <label>Özel Yakıt Tüketimi (L/100km)</label>
+        <input type="number" id="customConsumption" step="0.1" placeholder="Örneğin: 7.5">
+      </div>
+      <div class="input-group">
+        <label>Özel Yıpranma Payı (₺/km)</label>
+        <input type="number" id="customDepreciation" step="0.1" placeholder="Örneğin: 3.0">
+      </div>
+    </div>
+    
+    <div class="input-group">
+      <label>Tek Yön Mesafe (km)</label>
+      <input type="number" id="distance" placeholder="Örneğin: 45" step="0.1">
+    </div>
+    
+    <!-- Yeni Ekstra KM Ücreti Bölümü -->
+    <div class="toggle-group">
+      <label class="toggle-switch">
+        <input type="checkbox" id="extraKmToggle">
+        <span class="slider"></span>
+      </label>
+      <label style="margin-bottom:0;">15 km'den sonra ekstra ücret ekle</label>
+    </div>
+    
+    <div id="extraKmGroup" style="display:none;">
+      <div class="input-group">
+        <label>Ekstra KM Başı Ücret (₺)</label>
+        <input type="number" id="extraKmPrice" value="5" step="0.5">
+      </div>
+    </div>
+    
+    <div class="input-group">
+      <label>Yakıt Fiyatı (₺/Litre)</label>
+      <input type="number" id="fuelPrice" value="56.71" step="0.01">
+    </div>
+    
+    <div class="input-group">
+      <label>2025 Net Asgari Ücret (₺)</label>
+      <input type="number" id="minWage" value="22140">
+    </div>
+    
+    <div class="input-group">
+      <label>Çalışma Süresi (Saat)</label>
+      <input type="number" id="workHours" value="2" step="0.1">
+    </div>
+    
+    <div class="input-group">
+      <label>Ek Giderler (₺)</label>
+      <input type="number" id="extraCosts" value="0" placeholder="Otopark, yol ücreti vb.">
+    </div>
+    
+    <div class="input-group">
+      <label>Kâr Marjı (%)</label>
+      <input type="number" id="profitMargin" value="30" step="1">
+    </div>
+    
+    <button onclick="calculate()">MALİYET + KÂRI HESAPLA</button>
+    
+    <div id="result" class="card">
+      <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">📊 2025 Maliyet ve Kâr Analizi</h2>
+      
+      <div class="cost-row">
+        <span>Toplam Mesafe:</span>
+        <span id="totalDistance">0 km</span>
+      </div>
+      
+      <div id="extraKmResult" style="display:none;">
+        <div class="cost-row">
+          <span>Ekstra KM Ücreti (15 km'den fazlası):</span>
+          <span id="extraKmCost">0 ₺</span>
+        </div>
+      </div>
+      
+      <div class="section-title">🔧 Araç Maliyetleri</div>
+      <div class="cost-row">
+        <span>Yakıt Tüketimi:</span>
+        <span id="consumptionDisplay">0 L/100km</span>
+      </div>
+      <div class="cost-row">
+        <span>Yakıt Maliyeti:</span>
+        <span id="fuelCost">0 ₺</span>
+      </div>
+      <div class="cost-row">
+        <span>Yıpranma Payı:</span>
+        <span id="depreciationCost">0 ₺</span>
+      </div>
+      
+      <div class="section-title">👷 İşçilik Maliyetleri</div>
+      <div class="cost-row">
+        <span>Saatlik Brüt Ücret:</span>
+        <span id="hourlyGross">0 ₺</span>
+      </div>
+      <div class="cost-row">
+        <span>SGK İşveren Payı (%37.5):</span>
+        <span id="insurance">0 ₺</span>
+      </div>
+      <div class="cost-row">
+        <span>İşsizlik Fonu (%2):</span>
+        <span id="unemployment">0 ₺</span>
+      </div>
+      <div class="cost-row">
+        <span>Toplam İşçilik Maliyeti:</span>
+        <span id="totalLabor">0 ₺</span>
+      </div>
+      
+      <div class="cost-row">
+        <span>Ek Giderler:</span>
+        <span id="displayExtra">0 ₺</span>
+      </div>
+      
+      <div class="cost-row total">
+        <span>TOPLAM MALİYET:</span>
+        <span id="totalCost">0 ₺</span>
+      </div>
+      
+      <div class="cost-row profit">
+        <span>KÂR MARJI (%<span id="profitPercent">0</span>):</span>
+        <span id="profitAmount">0 ₺</span>
+      </div>
+      
+      <div class="cost-row total" style="color: var(--profit);">
+        <span>FİYAT TEKLİFİ:</span>
+        <span id="finalPrice">0 ₺</span>
+      </div>
+      
+      <div style="text-align: center; margin-top: 16px;">
+        <span class="badge">2025 Güncel Veriler</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Araç tipi değiştiğinde
+    function updateVehicleDetails() {
+      const vehicleType = document.getElementById('vehicleType').value;
+      const customGroup = document.getElementById('customConsumptionGroup');
+      
+      if (vehicleType === 'custom') {
+        customGroup.style.display = 'block';
+      } else {
+        customGroup.style.display = 'none';
+      }
+    }
+    
+    // Ekstra KM toggle değiştiğinde
+    document.getElementById('extraKmToggle').addEventListener('change', function() {
+      document.getElementById('extraKmGroup').style.display = this.checked ? 'block' : 'none';
+    });
+    
+    function calculate() {
+      // Kullanıcı girdileri
+      let consumption, depreciation;
+      const vehicleType = document.getElementById('vehicleType').value;
+      
+      if (vehicleType === 'custom') {
+        consumption = parseFloat(document.getElementById('customConsumption').value);
+        depreciation = parseFloat(document.getElementById('customDepreciation').value);
+        if (!consumption || consumption <= 0 || !depreciation || depreciation <= 0) {
+          alert("Lütfen geçerli yakıt tüketimi ve yıpranma payı girin!");
+          return;
+        }
+      } else {
+        [consumption, depreciation] = vehicleType.split('|').map(Number);
+      }
+      
+      const distance = parseFloat(document.getElementById('distance').value);
+      const fuelPrice = parseFloat(document.getElementById('fuelPrice').value);
+      const minWage = parseFloat(document.getElementById('minWage').value);
+      const workHours = parseFloat(document.getElementById('workHours').value);
+      const extraCosts = parseFloat(document.getElementById('extraCosts').value) || 0;
+      const profitMargin = parseFloat(document.getElementById('profitMargin').value) || 0;
+      const extraKmEnabled = document.getElementById('extraKmToggle').checked;
+      const extraKmPrice = extraKmEnabled ? parseFloat(document.getElementById('extraKmPrice').value) : 0;
+      
+      // Hata kontrolü
+      if (!distance || !fuelPrice || !minWage || !workHours) {
+        alert("Lütfen zorunlu alanları doldurun!");
+        return;
+      }
+      
+      // Yakıt hesaplamaları
+      const totalDistance = distance * 2; // Gidiş-dönüş
+      const fuelUsed = (totalDistance / 100) * consumption;
+      const fuelCost = fuelUsed * fuelPrice;
+      
+      // Yıpranma payı
+      const depreciationCost = totalDistance * depreciation;
+      
+      // Ekstra KM ücreti (15 km'den fazlası için)
+      let extraKmCost = 0;
+      if (extraKmEnabled && distance > 15) {
+        const extraKm = distance - 15;
+        extraKmCost = extraKm * 2 * extraKmPrice; // Gidiş-dönüş
+      }
+      
+      // İşçilik maliyetleri (2025 projeksiyonu)
+      const monthlyHours = 180; // Aylık 180 saat (45 saat/hafta x 4 hafta)
+      const hourlyGross = minWage / monthlyHours;
+      
+      // SGK primi (%37.5 - işveren payı)
+      const insuranceRate = 0.375;
+      const insuranceCost = hourlyGross * insuranceRate * workHours;
+      
+      // İşsizlik fonu (%2)
+      const unemploymentRate = 0.02;
+      const unemploymentCost = hourlyGross * unemploymentRate * workHours;
+      
+      // Toplam işçilik maliyeti
+      const totalLaborCost = (hourlyGross + insuranceCost + unemploymentCost) * workHours;
+      
+      // Genel toplam
+      const totalCost = fuelCost + depreciationCost + totalLaborCost + extraCosts + extraKmCost;
+      
+      // Kâr hesaplama
+      const profitAmount = totalCost * (profitMargin / 100);
+      const finalPrice = totalCost + profitAmount;
+      
+      // Sonuçları göster
+      document.getElementById('totalDistance').textContent = totalDistance.toFixed(1) + ' km';
+      
+      // Ekstra KM sonuçlarını göster/gizle
+      const extraKmResult = document.getElementById('extraKmResult');
+      if (extraKmEnabled && distance > 15) {
+        extraKmResult.style.display = 'block';
+        document.getElementById('extraKmCost').textContent = extraKmCost.toFixed(2) + ' ₺';
+      } else {
+        extraKmResult.style.display = 'none';
+      }
+      
+      document.getElementById('consumptionDisplay').textContent = consumption.toFixed(1) + ' L/100km';
+      document.getElementById('fuelCost').textContent = fuelCost.toFixed(2) + ' ₺';
+      document.getElementById('depreciationCost').textContent = depreciationCost.toFixed(2) + ' ₺';
+      document.getElementById('hourlyGross').textContent = hourlyGross.toFixed(2) + ' ₺';
+      document.getElementById('insurance').textContent = insuranceCost.toFixed(2) + ' ₺';
+      document.getElementById('unemployment').textContent = unemploymentCost.toFixed(2) + ' ₺';
+      document.getElementById('totalLabor').textContent = totalLaborCost.toFixed(2) + ' ₺';
+      document.getElementById('displayExtra').textContent = extraCosts.toFixed(2) + ' ₺';
+      document.getElementById('totalCost').textContent = totalCost.toFixed(2) + ' ₺';
+      document.getElementById('profitPercent').textContent = profitMargin;
+      document.getElementById('profitAmount').textContent = profitAmount.toFixed(2) + ' ₺';
+      document.getElementById('finalPrice').textContent = finalPrice.toFixed(2) + ' ₺';
+      
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Sayfa yüklendiğinde varsayılanları ayarla
+    window.onload = function() {
+      // 2025 tahmini asgari ücret (enflasyon + %20 artış varsayımı)
+      document.getElementById('minWage').value = 25300;
+      
+      // 2025 tahmini yakıt fiyatı (mevcut eğilimle)
+      document.getElementById('fuelPrice').value = 68.50;
+      
+      // Toggle eventini dinle
+      document.getElementById('extraKmToggle').addEventListener('change', function() {
+        document.getElementById('extraKmGroup').style.display = this.checked ? 'block' : 'none';
+      });
+    };
+  </script>
+</body>
+</html>
